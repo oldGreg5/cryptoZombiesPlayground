@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "./ZombieFactory.sol";
 
 abstract contract KittyInterface {
-  function getKitty(uint256 _id) external view virtual returns (
+function getKitty(uint256 _id) external view virtual returns (
     bool isGestating,
     bool isReady,
     uint256 cooldownIndex,
@@ -22,11 +23,6 @@ contract ZombieFeeding is ZombieFactory {
 
   KittyInterface kittyContract;
 
-  modifier onlyOwnerOf(uint _zombieId) {
-    require(msg.sender == zombieToOwner[_zombieId]);
-    _;
-  }
-
   function setKittyContractAddress(address _address) external onlyOwner {
     kittyContract = KittyInterface(_address);
   }
@@ -41,7 +37,7 @@ contract ZombieFeeding is ZombieFactory {
 
   function feedAndMultiply(uint _zombieId, uint _targetDna, string memory _species) internal onlyOwnerOf(_zombieId) {
     Zombie storage myZombie = zombies[_zombieId];
-    require(_isReady(myZombie));
+    require(_isReady(myZombie), string(abi.encodePacked('Zombie cooldown hit(ready/now) : ', Strings.toString(myZombie.readyTime), ' / ', Strings.toString(block.timestamp))));
     _targetDna = _targetDna % dnaModulus;
     uint newDna = (myZombie.dna + _targetDna) / 2;
     if (keccak256(abi.encodePacked(_species)) == keccak256(abi.encodePacked("kitty"))) {

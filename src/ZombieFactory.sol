@@ -2,11 +2,13 @@
 pragma solidity ^0.8.24;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
-contract ZombieFactory is Ownable {
-  constructor() Ownable(msg.sender) {}
+contract ZombieFactory is Ownable, ERC721 {
+  constructor() Ownable(msg.sender) ERC721("Zombie", "ZMB") {}
 
   event NewZombie(uint zombieId, string name, uint dna);
+  event ZombieCreated(uint256 zombieId, address owner);
 
   uint dnaDigits = 16;
   uint dnaModulus = 10 ** dnaDigits;
@@ -23,15 +25,35 @@ contract ZombieFactory is Ownable {
 
   Zombie[] public zombies;
 
-  mapping (uint => address) public zombieToOwner;
   mapping (address => uint) ownerZombieCount;
+
+  error ZombieBelowLevel(uint256 zombieId, uint32 required, uint32 actual);
+  modifier aboveLevel(uint _level, uint _zombieId) {
+        if (zombies[_zombieId].level < _level) {
+            revert ZombieBelowLevel(
+                _zombieId,
+                uint32(_level),
+                zombies[_zombieId].level
+            );
+        }
+        _;
+    }
+
+    error NotZombieOwner(uint256 zombieId, address caller);
+    modifier onlyOwnerOf(uint _zombieId) {
+        if (msg.sender != ownerOf(_zombieId)) {
+            revert NotZombieOwner(_zombieId, msg.sender);
+        }
+        _;
+    }
 
   function _createZombie(string memory _name, uint _dna) internal {
     zombies.push(Zombie(_name, _dna, 1, uint32(block.timestamp + cooldownTime), 0, 0));
     uint id = zombies.length - 1;
-    zombieToOwner[id] = msg.sender;
+    _mint(msg.sender, id);
     ownerZombieCount[msg.sender] = ownerZombieCount[msg.sender] + 1;
     emit NewZombie(id, _name, _dna);
+    emit ZombieCreated(id, msg.sender);
   }
 
   function _generateRandomDna(string memory _str) private view returns (uint) {
