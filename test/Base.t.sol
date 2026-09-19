@@ -23,10 +23,7 @@ abstract contract BaseTest is Test {
         z.setKittyContractAddress(address(kitty));
     }
 
-    function _spawnZombie(
-        address who,
-        string memory name
-    ) internal returns (uint256 id) {
+    function _spawnZombie(address who, string memory name) internal returns (uint256 id) {
         vm.prank(who);
         z.createRandomZombie(name);
         id = z.totalZombies() - 1;

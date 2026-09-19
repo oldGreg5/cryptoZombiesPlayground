@@ -9,7 +9,7 @@ contract ZombieUnitTest is BaseTest {
         (, uint256 dna,,,,) = z.zombies(id);
         assertEq(z.ownerOf(id), alice);
         assertLt(dna, 1e16);
-        assertEq(dna % 100, 0);          // random zombies end in 00
+        assertEq(dna % 100, 0); // random zombies end in 00
     }
 
     function test_CreateZombie_RevertsOnSecond() public {
@@ -32,7 +32,7 @@ contract ZombieUnitTest is BaseTest {
     }
 
     function test_ChangeName_GatedByLevel() public {
-        uint256 id = _spawnZombie(alice, "A");     // level 1
+        uint256 id = _spawnZombie(alice, "A"); // level 1
         vm.prank(alice);
         vm.expectRevert();
         z.changeName(id, "New");
@@ -62,7 +62,7 @@ contract ZombieUnitTest is BaseTest {
 
     function test_Feed_CooldownBoundary() public {
         uint256 id = _spawnZombie(alice, "A");
-        (, , , uint32 readyTime,,) = z.zombies(id);
+        (,,, uint32 readyTime,,) = z.zombies(id);
         vm.warp(readyTime - 1);
         // Feed the zombie and trigger cooldown gate
         vm.prank(alice);
@@ -72,5 +72,21 @@ contract ZombieUnitTest is BaseTest {
         vm.warp(readyTime);
         vm.prank(alice);
         z.feedOnKitty(id, 1);
+    }
+
+    function testFuzz_DnaAlwaysValid(string memory name) public {
+        uint256 id = _spawnZombie(alice, name);
+        (, uint256 dna,,,,) = z.zombies(id);
+        assertLt(dna, 1e16);
+        assertEq(dna % 100, 0); // random zombies end in 00
+    }
+
+    function testFuzz_LevelUpRejectsWrongFee(uint256 wrongFee) public {
+        wrongFee = bound(wrongFee, 0, 1 ether);
+        vm.assume(wrongFee != 0.001 ether);
+        uint256 id = _spawnZombie(alice, "A");
+        vm.prank(alice);
+        vm.expectRevert();
+        z.levelUp{value: wrongFee}(id);
     }
 }
