@@ -16,6 +16,10 @@ contract ZombieHelper is ZombieFeeding {
         levelUpFee = _fee;
     }
 
+    function getLevelUpFee() external view returns (uint256) {
+        return levelUpFee;
+    }
+
     function levelUp(uint256 _zombieId) external payable {
         require(msg.value == levelUpFee);
         zombies[_zombieId].level = zombies[_zombieId].level + 1;
@@ -34,7 +38,7 @@ contract ZombieHelper is ZombieFeeding {
     }
 
     function getZombiesByOwner(address _owner) external view returns (uint256[] memory) {
-        uint256[] memory result = new uint256[](ownerZombieCount[_owner]);
+        uint256[] memory result = new uint256[](balanceOf(_owner));
         uint256 counter = 0;
         for (uint256 i = 0; i < zombies.length; i++) {
             if (ownerOf(i) == _owner) {

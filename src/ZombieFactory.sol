@@ -25,8 +25,6 @@ contract ZombieFactory is Ownable, ERC721 {
 
     Zombie[] public zombies;
 
-    mapping(address => uint256) ownerZombieCount;
-
     error ZombieBelowLevel(uint256 zombieId, uint32 required, uint32 actual);
     modifier aboveLevel(uint256 _level, uint256 _zombieId) {
         if (zombies[_zombieId].level < _level) {
@@ -47,7 +45,6 @@ contract ZombieFactory is Ownable, ERC721 {
         zombies.push(Zombie(_name, _dna, 1, uint32(block.timestamp + cooldownTime), 0, 0));
         uint256 id = zombies.length - 1;
         _mint(msg.sender, id);
-        ownerZombieCount[msg.sender] = ownerZombieCount[msg.sender] + 1;
         emit NewZombie(id, _name, _dna);
         emit ZombieCreated(id, msg.sender);
     }
@@ -58,7 +55,7 @@ contract ZombieFactory is Ownable, ERC721 {
     }
 
     function createRandomZombie(string memory _name) public {
-        require(ownerZombieCount[msg.sender] == 0);
+        require(balanceOf(msg.sender) == 0);
         uint256 randDna = _generateRandomDna(_name);
         randDna = randDna - randDna % 100;
         _createZombie(_name, randDna);
