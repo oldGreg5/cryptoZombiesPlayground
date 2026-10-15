@@ -13,6 +13,7 @@ contract ZombieAttack is ZombieHelper {
     }
 
     function attack(uint256 _zombieId, uint256 _targetId) external onlyOwnerOf(_zombieId) {
+        require(_isReady(zombies[_zombieId]), "Zombie can't attack on cooldown");
         Zombie storage myZombie = zombies[_zombieId];
         Zombie storage enemyZombie = zombies[_targetId];
         uint256 rand = randMod(100);

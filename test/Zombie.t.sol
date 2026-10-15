@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {BaseTest} from "./Base.t.sol";
+import "forge-std/console.sol";
 
 contract ZombieUnitTest is BaseTest {
     function test_CreateZombie_SetsOwnerAndDnaFormat() public {
@@ -89,4 +90,86 @@ contract ZombieUnitTest is BaseTest {
         vm.expectRevert();
         z.levelUp{value: wrongFee}(id);
     }
+
+    function test_OnlyOwnerOf_Reverts() public {
+        vm.prank(alice);
+        z.createRandomZombie("Alice"); // Spawns at level 1
+
+        // Level up the zombie to 2 so it safely bypasses the aboveLevel modifier
+        uint256 fee = z.getLevelUpFee();
+        z.levelUp{value: fee}(0);
+
+        // Now Bob tries to steal it
+        vm.prank(bob);
+        vm.expectRevert(abi.encodeWithSignature("NotZombieOwner(uint256,address)", 0, bob));
+        z.changeName(0, "BobStoleIt");
+    }
+
+    function test_SetLevelUpFee() public {
+        uint256 newFee = 0.005 ether;
+
+        vm.prank(owner);
+        z.setLevelUpFee(newFee);
+
+        // Verify the state actually changed
+        assertEq(z.getLevelUpFee(), newFee);
+    }
+
+    function test_GetZombiesByOwnerGasScaling() public {
+        // Measure gas cost when the total supply is 1, 10, and 100
+        for (uint256 n = 1; n <= 100; n++) {
+            // Use a unique address for each iteration to bypass the 1-per-account rule
+            address player = address(uint160(1000 + n));
+
+            vm.prank(player);
+            z.createRandomZombie("Spam");
+
+            if (n == 1 || n == 10 || n == 100) {
+                // Measure how much gas it takes to read Alice's array
+                uint256 gasBefore = gasleft();
+                z.getZombiesByOwner(alice);
+                uint256 gasUsed = gasBefore - gasleft();
+
+                console.log("Global Supply:", n, "| Gas Used:", gasUsed);
+            }
+        }
+    }
+
+    // function test_AboveLevel_Reverts() public {
+    //     vm.prank(alice);
+    //     z.createRandomZombie("Alice"); // Spawns at level 1
+
+    //     vm.prank(alice);
+    //     vm.expectRevert(abi.encodeWithSignature("ZombieBelowLevel(uint256,uint32,uint32)", 0, 2, 1));
+    //     z.changeName(0, "NewName"); // Requires level 2
+    // }
+
+    // function test_SetLevelUpFee() public {
+    //     uint256 newFee = 0.005 ether;
+    //     z.setLevelUpFee(newFee);
+    //     assertEq(z.getLevelUpFee(), newFee);
+    // }
+
+    // // --- GAS SCALING BUG PROOF ---
+
+    // function test_GetZombiesByOwnerGasScaling() public {
+    //     // Measure gas cost for 1, 10, and 100 zombies
+    //     for (uint256 n = 1; n <= 100; n++) {
+    //         // Use a unique address for each to bypass the 1-per-account rule
+    //         address player = address(uint160(1000 + n));
+
+    //         vm.prank(player);
+    //         z.createRandomZombie("Spam");
+
+    //         if (n == 1 || n == 10 || n == 100) {
+    //             // Record how much gas is left before the call
+    //             uint256 gasBefore = gasleft();
+
+    //             z.getZombiesByOwner(alice);
+
+    //             uint256 gasUsed = gasBefore - gasleft();
+    //             console.log("Global Supply:", n, "| Gas Used:", gasUsed);
+    //         }
+    //     }
+    // }
 }

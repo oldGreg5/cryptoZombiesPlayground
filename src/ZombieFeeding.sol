@@ -4,11 +4,28 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "./ZombieFactory.sol";
 
-abstract contract KittyInterface {
+// abstract contract KittyInterface {
+//     function getKitty(uint256 _id)
+//         external
+//         view
+//         virtual
+//         returns (
+//             bool isGestating,
+//             bool isReady,
+//             uint256 cooldownIndex,
+//             uint256 nextActionAt,
+//             uint256 siringWithId,
+//             uint256 birthTime,
+//             uint256 matronId,
+//             uint256 sireId,
+//             uint256 generation,
+//             uint256 genes
+//         );
+// }
+interface KittyInterface {
     function getKitty(uint256 _id)
         external
         view
-        virtual
         returns (
             bool isGestating,
             bool isReady,
