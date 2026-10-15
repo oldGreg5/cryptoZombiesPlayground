@@ -1,0 +1,72 @@
+name: Foundry CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  FOUNDRY_PROFILE: default
+
+jobs:
+  check-and-test:
+    name: Core Suite, Gas & Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Check formatting
+        run: forge fmt --check
+
+      - name: Build and check EIP-170 contract size limit
+        run: forge build --sizes
+
+      - name: Run unit, fuzz, and invariant tests
+        run: forge test --no-match-contract Fork -vvv
+
+      - name: Check gas snapshot regressions
+        run: forge snapshot --check --no-match-test "invariant_|testFuzz_" --no-match-contract Fork --tolerance 3
+
+      - name: Smoke test Anvil deployment and Seed script
+        run: |
+          mkdir -p deployments
+          anvil --silent &
+          ANVIL_PID=$!
+          sleep 2
+          forge script script/Seed.s.sol --rpc-url http://127.0.0.1:8545 --broadcast
+          test -f deployments/local.json
+          kill $ANVIL_PID
+
+      - name: Run scoped coverage report
+        run: forge coverage --no-match-coverage "(test|script|mocks)" --no-match-contract Fork --report summary
+
+  fork-tests:
+    name: Mainnet Fork Suite
+    runs-on: ubuntu-latest
+    needs: check-and-test
+    if: ${{ secrets.MAINNET_RPC_URL != '' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run KittyFork tests against Mainnet
+        env:
+          MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
+        run: forge test --match-contract Fork -vvv

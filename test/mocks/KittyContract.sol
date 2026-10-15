@@ -20,8 +20,13 @@ contract MockKittyContract {
     {
         isGestating = false;
         isReady = true;
-        genes = _id;
-        // cooldownIndex, nextActionAt, siringWithId, birthTime, matronId, sireId
-        // default to 0 automatically — no need to assign them
+        cooldownIndex = 0;
+        nextActionAt = 0;
+        siringWithId = 0;
+        birthTime = 0;
+        matronId = 0;
+        sireId = 0;
+        generation = 0;
+        genes = uint256(keccak256(abi.encodePacked(_id)));
     }
 }

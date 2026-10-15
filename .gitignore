@@ -18,3 +18,10 @@ docs/
 .env
 .env.*
 !.env.example
+
+# Coverage artifacts
+lcov.info
+coverage/
+
+# Local Anvil seed output
+deployments/local.json
